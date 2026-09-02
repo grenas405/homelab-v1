@@ -58,6 +58,92 @@ err()   { printf '%s   ✗ %s%s\n'  "$(_col '240;100;100')" "$*" "$(_reset)" >&2
 teach() { printf '%s   🎓 %s%s\n' "$(_col '180;140;250')" "$*" "$(_reset)"; }
 
 # ---------------------------------------------------------------------------
+# Boxed-table renderer
+#
+#   render_table "Title" "H1|H2|..." "L|R|..." "r1c1|r1c2|..." "r2c1|..."
+#     arg 1  : title line printed above the table ("" for none)
+#     arg 2  : pipe-separated header cells
+#     arg 3  : pipe-separated alignment flags (L or R), one per column
+#     arg 4+ : pipe-separated data rows
+#
+# Column widths are measured from the widest cell. Box-drawing glyphs are used
+# on colour-capable terminals and plain ASCII (+ - |) everywhere else, so the
+# report stays readable when piped to a file.
+# ---------------------------------------------------------------------------
+if [[ $USE_COLOR -eq 1 ]]; then
+    BX_TL='┌'; BX_TR='┐'; BX_BL='└'; BX_BR='┘'; BX_H='─'; BX_V='│'
+    BX_TT='┬'; BX_BT='┴'; BX_LT='├'; BX_RT='┤'; BX_X='┼'
+else
+    BX_TL='+'; BX_TR='+'; BX_BL='+'; BX_BR='+'; BX_H='-'; BX_V='|'
+    BX_TT='+'; BX_BT='+'; BX_LT='+'; BX_RT='+'; BX_X='+'
+fi
+
+_repeat() {  # _repeat <count> <string>
+    local n=$1 s=$2 out=''
+    while (( n > 0 )); do out+="$s"; n=$((n - 1)); done
+    printf '%s' "$out"
+}
+
+render_table() {
+    local title="$1"; shift
+    local header="$1"; shift
+    local aligns="$1"; shift
+    local rows=( "$@" )
+
+    local IFS='|'
+    local -a H A
+    read -r -a H <<< "$header"
+    read -r -a A <<< "$aligns"
+    local ncol=${#H[@]}
+
+    local -a W
+    local i row
+    local -a C
+    for (( i = 0; i < ncol; i++ )); do W[i]=${#H[i]}; done
+    for row in "${rows[@]}"; do
+        read -r -a C <<< "$row"
+        for (( i = 0; i < ncol; i++ )); do
+            if (( ${#C[i]} > W[i] )); then W[i]=${#C[i]}; fi
+        done
+    done
+
+    _rule() {  # _rule <left-glyph> <mid-glyph> <right-glyph>
+        local out="$1" k
+        for (( k = 0; k < ncol; k++ )); do
+            out+="$(_repeat $(( W[k] + 2 )) "$BX_H")"
+            if (( k < ncol - 1 )); then out+="$2"; else out+="$3"; fi
+        done
+        printf '%s%s%s\n' "$(_col '90;110;130')" "$out" "$(_reset)"
+    }
+
+    _line() {  # _line <cell> <cell> ...
+        local -a cells=( "$@" )
+        local out='' k pad
+        for (( k = 0; k < ncol; k++ )); do
+            if [[ "${A[k]:-L}" == "R" ]]; then
+                printf -v pad '%*s'  "${W[k]}" "${cells[k]}"
+            else
+                printf -v pad '%-*s' "${W[k]}" "${cells[k]}"
+            fi
+            out+="${BX_V} ${pad} "
+        done
+        printf '%s%s\n' "$out" "${BX_V}"
+    }
+
+    if [[ -n "$title" ]]; then
+        printf '%s%s%s\n' "$(_col '120;200;255')" "$title" "$(_reset)"
+    fi
+    _rule "$BX_TL" "$BX_TT" "$BX_TR"
+    _line "${H[@]}"
+    _rule "$BX_LT" "$BX_X" "$BX_RT"
+    for row in "${rows[@]}"; do
+        read -r -a C <<< "$row"
+        _line "${C[@]}"
+    done
+    _rule "$BX_BL" "$BX_BT" "$BX_BR"
+}
+
+# ---------------------------------------------------------------------------
 # Target-machine guard
 # ---------------------------------------------------------------------------
 printf '%s════════════════════════════════════════════════════════════%s\n' "$(_col '120;200;255')" "$(_reset)"
@@ -227,3 +313,80 @@ info "Then open http://localhost:8080 in your browser."
 teach "On first launch Open WebUI asks you to create a local account. That"
 teach "account lives only on this machine. Pick $OLLAMA_MODEL in the model"
 teach "menu at the top and start chatting."
+
+# ---------------------------------------------------------------------------
+step "Your workstation's hardware"
+# ---------------------------------------------------------------------------
+teach "This is what Ollama has to work with. On the GPU, VRAM total is the"
+teach "number that decides which models fit."
+
+# --- GPU (NVIDIA) ---
+gpu_rows=()
+no_gpu=0
+if command -v nvidia-smi >/dev/null 2>&1; then
+    cuda_ver=$(nvidia-smi 2>/dev/null | sed -n 's/.*CUDA Version: *\([0-9.]\{1,\}\).*/\1/p' | head -n1)
+    [[ -n "$cuda_ver" ]] || cuda_ver="-"
+
+    mapfile -t _gpu_base < <(nvidia-smi --query-gpu=name,memory.total,driver_version \
+        --format=csv,noheader,nounits 2>/dev/null)
+    mapfile -t _gpu_cc < <(nvidia-smi --query-gpu=compute_cap \
+        --format=csv,noheader,nounits 2>/dev/null)
+
+    gi=0
+    for _l in "${_gpu_base[@]}"; do
+        IFS=',' read -r _name _mem _drv <<< "$_l"
+        _name=$(printf '%s' "$_name" | sed 's/^ *//; s/ *$//')
+        _mem=$(printf '%s' "$_mem" | tr -d ' ')
+        _drv=$(printf '%s' "$_drv" | tr -d ' ')
+        _gib=$(awk -v m="$_mem" 'BEGIN { if (m ~ /^[0-9.]+$/) printf "%.1f GiB", m / 1024; else printf "-" }')
+        _cc=$(printf '%s' "${_gpu_cc[gi]:-}" | tr -d ' ')
+        [[ -n "$_cc" && "$_cc" != "[NotSupported]" ]] || _cc="-"
+        gpu_rows+=( "${_name}|${_gib}|${_cc}|${_drv}|${cuda_ver}" )
+        gi=$((gi + 1))
+    done
+fi
+
+if [[ ${#gpu_rows[@]} -eq 0 ]]; then
+    no_gpu=1
+    gpu_rows=( "No NVIDIA GPU detected|-|-|-|-" )
+fi
+
+render_table "GPU (NVIDIA)" \
+    "Name|VRAM Total|Compute Cap|Driver|CUDA" \
+    "L|R|R|R|R" \
+    "${gpu_rows[@]}"
+
+echo
+
+# --- CPU / Memory ---
+cpu_model=$(sed -n 's/^model name[[:space:]]*:[[:space:]]*//p' /proc/cpuinfo 2>/dev/null | head -n1)
+[[ -n "$cpu_model" ]] || cpu_model=$(lscpu 2>/dev/null | sed -n 's/^Model name:[[:space:]]*//p' | head -n1)
+[[ -n "$cpu_model" ]] || cpu_model="-"
+
+threads=$(nproc 2>/dev/null || echo "")
+[[ -n "$threads" ]] || threads="-"
+phys_cores=$(lscpu 2>/dev/null | awk -F': +' '
+    /^Core\(s\) per socket/ { c = $2 }
+    /^Socket\(s\)/          { s = $2 }
+    END { if (c != "" && s != "") print c * s }')
+[[ -n "$phys_cores" ]] || phys_cores="-"
+
+ram_total=$(awk '/^MemTotal:/ { printf "%.1f GiB", $2 / 1048576 }' /proc/meminfo 2>/dev/null)
+[[ -n "$ram_total" ]] || ram_total="-"
+
+render_table "CPU / Memory" \
+    "Field|Value" \
+    "L|L" \
+    "CPU|${cpu_model}" \
+    "Cores / Threads|${phys_cores} / ${threads}" \
+    "Total RAM|${ram_total}"
+
+echo
+teach "Rule of thumb: a 4-bit-quantized model needs roughly its parameter"
+teach "count in billions times 0.6–0.75 GiB of VRAM to run entirely on the"
+teach "GPU. With less, Ollama splits it between GPU and system RAM and runs"
+teach "slower. $OLLAMA_MODEL at Q4 needs about 5–6 GiB of VRAM."
+if [[ $no_gpu -eq 1 ]]; then
+    teach "No NVIDIA GPU was found here, so $OLLAMA_MODEL runs on the CPU using"
+    teach "system RAM. It still works — just expect slower replies."
+fi

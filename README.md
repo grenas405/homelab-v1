@@ -46,3 +46,17 @@ Browser  ──►  Open WebUI (:8080)  ──►  Ollama (:11434)  ──►  q
 
 Open WebUI never runs a model itself — it forwards messages to Ollama and
 displays the replies.
+
+## Hardware report
+
+The script's final section prints a report of the detected hardware:
+
+- **GPU (NVIDIA)** — Name, VRAM Total, Compute Cap, Driver, CUDA (from
+  `nvidia-smi`). If no NVIDIA GPU is present it says so and notes that
+  `qwen3:8b` will run on the CPU instead.
+- **CPU / Memory** — CPU model, cores / threads, total RAM.
+
+It closes with a rule of thumb for reading those numbers: a 4-bit-quantized
+model needs roughly its parameter count in billions × 0.6–0.75 GiB of VRAM to
+run entirely on the GPU; with less, Ollama splits it between GPU and system RAM
+and runs slower.

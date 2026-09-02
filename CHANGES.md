@@ -19,6 +19,17 @@ All notable changes to this homelab setup.
   how Open WebUI connects to Ollama.
 - Target-machine banner and a `yes` confirmation prompt so the script cannot be
   run on the wrong host by accident.
+- End-of-run **hardware report** as the final section:
+  - Boxed **GPU (NVIDIA)** table — Name, VRAM Total, Compute Cap, Driver, CUDA —
+    read from `nvidia-smi`; one row per GPU, or a "No NVIDIA GPU detected" row
+    with a CPU-inference `teach` note when none is found.
+  - Boxed **CPU / Memory** table — CPU model, cores / threads, total RAM — from
+    `/proc/cpuinfo`, `lscpu`, `nproc`, and `/proc/meminfo`.
+  - A `teach` note giving a VRAM-per-parameter rule of thumb for judging which
+    models fit.
+- Generic `render_table` helper: computed column widths, per-column
+  left/right alignment, box-drawing glyphs that drop to ASCII (`+ - |`) when
+  colour is unavailable.
 - `README.md` orientation doc.
 
 ### Changed
