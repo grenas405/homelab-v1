@@ -21,7 +21,8 @@
 #
 # Usage:
 #   chmod +x setup.sh
-#   ./setup.sh
+#   ./setup.sh              # real install (asks for confirmation first)
+#   ./setup.sh --dry-run    # print every step and all logging, change nothing
 #
 
 set -e  # stop immediately if any command fails
@@ -32,6 +33,30 @@ set -e  # stop immediately if any command fails
 ENV_DIR="$HOME/openwebui-env"
 OLLAMA_MODEL="qwen3:8b"
 TARGET_MACHINE="Eric Harvey's Workstation"
+
+# ---------------------------------------------------------------------------
+# Command-line options
+#
+#   --dry-run / -n : walk through every step and print all logging, the
+#                    banner, and the real hardware report, but do not install
+#                    anything, touch systemd, or modify any files. Useful for
+#                    previewing the output on a machine that is NOT the target.
+# ---------------------------------------------------------------------------
+DRY_RUN=0
+for _arg in "$@"; do
+    case "$_arg" in
+        -n|--dry-run) DRY_RUN=1 ;;
+        -h|--help)
+            printf 'Usage: %s [--dry-run|-n] [--help|-h]\n\n' "${0##*/}"
+            printf '  --dry-run  Show every step and all logging without installing\n'
+            printf '             anything or changing the system.\n'
+            exit 0 ;;
+        *)
+            printf 'Unknown option: %s\n' "$_arg" >&2
+            printf 'Usage: %s [--dry-run|-n] [--help|-h]\n' "${0##*/}" >&2
+            exit 1 ;;
+    esac
+done
 
 # ---------------------------------------------------------------------------
 # True-colour logging helpers
@@ -56,6 +81,7 @@ ok()    { printf '%s   ✔ %s%s\n'  "$(_col '120;220;120')" "$*" "$(_reset)"; }
 warn()  { printf '%s   ⚠ %s%s\n'  "$(_col '240;190;90')"  "$*" "$(_reset)"; }
 err()   { printf '%s   ✗ %s%s\n'  "$(_col '240;100;100')" "$*" "$(_reset)" >&2; }
 teach() { printf '%s   🎓 %s%s\n' "$(_col '180;140;250')" "$*" "$(_reset)"; }
+would() { printf '%s   ~ would run: %s%s\n' "$(_col '150;170;190')" "$*" "$(_reset)"; }
 
 # ---------------------------------------------------------------------------
 # Boxed-table renderer
@@ -151,15 +177,22 @@ printf '%s  Homelab AI stack installer%s\n'  "$(_col '120;200;255')" "$(_reset)"
 printf '%s  Intended for: %s%s\n'            "$(_col '120;200;255')" "$TARGET_MACHINE" "$(_reset)"
 printf '%s════════════════════════════════════════════════════════════%s\n' "$(_col '120;200;255')" "$(_reset)"
 echo
-warn "This installs Ollama, a language model, and Open WebUI on THIS machine."
-warn "It is meant only for $TARGET_MACHINE — not a shared VM."
-echo
-read -r -p "Type 'yes' to confirm you are on $TARGET_MACHINE: " CONFIRM
-if [[ "$CONFIRM" != "yes" ]]; then
-    err "Not confirmed. Nothing has been changed. Exiting."
-    exit 1
+if [[ $DRY_RUN -eq 1 ]]; then
+    warn "DRY RUN — no packages, services, or files will be changed."
+    warn "Each step below shows what it *would* do; the hardware report is real."
+    echo
+    ok "Dry run: skipping the confirmation prompt."
+else
+    warn "This installs Ollama, a language model, and Open WebUI on THIS machine."
+    warn "It is meant only for $TARGET_MACHINE — not a shared VM."
+    echo
+    read -r -p "Type 'yes' to confirm you are on $TARGET_MACHINE: " CONFIRM
+    if [[ "$CONFIRM" != "yes" ]]; then
+        err "Not confirmed. Nothing has been changed. Exiting."
+        exit 1
+    fi
+    ok "Confirmed. Starting setup."
 fi
-ok "Confirmed. Starting setup."
 
 # ---------------------------------------------------------------------------
 step "Step 1 — Install Ollama"
@@ -168,39 +201,50 @@ teach "Ollama is a small server that runs large language models on your own"
 teach "hardware. Anything you type stays on this machine. Other programs talk"
 teach "to it over HTTP on port 11434."
 
-if command -v ollama >/dev/null 2>&1; then
-    ok "Ollama is already installed ($(ollama --version 2>/dev/null | head -n1)). Skipping install."
-else
-    info "Downloading and running the official installer from https://ollama.com ..."
-    curl -fsSL https://ollama.com/install.sh | sh
-    ok "Ollama installed."
-fi
-
-# Make sure the background service is running and will start on boot.
-if command -v systemctl >/dev/null 2>&1; then
-    info "Enabling the ollama system service so it starts automatically on boot..."
-    sudo systemctl enable --now ollama 2>/dev/null \
-        || warn "Could not manage the ollama service with systemctl (it may already be running)."
-    teach "A 'service' is a program the system keeps running in the background"
-    teach "for you, restarting it after a reboot without anyone logging in."
-fi
-
-# Wait for the API to answer before asking it to do anything.
-info "Waiting for the Ollama API to respond on http://localhost:11434 ..."
-READY=0
-for _ in $(seq 1 30); do
-    if curl -fsS http://localhost:11434/api/tags >/dev/null 2>&1; then
-        READY=1
-        break
+if [[ $DRY_RUN -eq 1 ]]; then
+    if command -v ollama >/dev/null 2>&1; then
+        ok "Ollama is already installed (v$(ollama --version 2>/dev/null | grep -oE "[0-9]+(\.[0-9]+)+" | head -n1))."
+    else
+        would "curl -fsSL https://ollama.com/install.sh | sh"
     fi
-    sleep 1
-done
-if [[ $READY -eq 1 ]]; then
-    ok "Ollama API is up."
+    would "sudo systemctl enable --now ollama"
+    would "poll http://localhost:11434/api/tags until the API answers"
 else
-    err "Ollama API did not respond after 30 seconds. Check: systemctl status ollama"
-    exit 1
+    if command -v ollama >/dev/null 2>&1; then
+        ok "Ollama is already installed (v$(ollama --version 2>/dev/null | grep -oE "[0-9]+(\.[0-9]+)+" | head -n1)). Skipping install."
+    else
+        info "Downloading and running the official installer from https://ollama.com ..."
+        curl -fsSL https://ollama.com/install.sh | sh
+        ok "Ollama installed."
+    fi
+
+    # Make sure the background service is running and will start on boot.
+    if command -v systemctl >/dev/null 2>&1; then
+        info "Enabling the ollama system service so it starts automatically on boot..."
+        sudo systemctl enable --now ollama 2>/dev/null \
+            || warn "Could not manage the ollama service with systemctl (it may already be running)."
+    fi
+
+    # Wait for the API to answer before asking it to do anything.
+    info "Waiting for the Ollama API to respond on http://localhost:11434 ..."
+    READY=0
+    for _ in $(seq 1 30); do
+        if curl -fsS http://localhost:11434/api/tags >/dev/null 2>&1; then
+            READY=1
+            break
+        fi
+        sleep 1
+    done
+    if [[ $READY -eq 1 ]]; then
+        ok "Ollama API is up."
+    else
+        err "Ollama API did not respond after 30 seconds. Check: systemctl status ollama"
+        exit 1
+    fi
 fi
+
+teach "A 'service' is a program the system keeps running in the background"
+teach "for you, restarting it after a reboot without anyone logging in."
 teach "'localhost' means this computer talking to itself. Port 11434 is the"
 teach "door number the Ollama API listens on."
 
@@ -211,7 +255,9 @@ teach "A 'model' is the trained network that actually generates text. Bigger"
 teach "models are more capable but use more disk and memory. qwen3:8b is a"
 teach "strong general-purpose model that still runs comfortably on a workstation."
 
-if ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -qx "$OLLAMA_MODEL"; then
+if [[ $DRY_RUN -eq 1 ]]; then
+    would "ollama pull $OLLAMA_MODEL   (multi-gigabyte download)"
+elif ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -qx "$OLLAMA_MODEL"; then
     ok "Model $OLLAMA_MODEL is already downloaded."
 else
     info "Pulling $OLLAMA_MODEL — this is a multi-gigabyte download and can take a while..."
@@ -222,7 +268,13 @@ fi
 # ---------------------------------------------------------------------------
 step "Step 3 — Prepare a clean Python environment for Open WebUI"
 # ---------------------------------------------------------------------------
-if [ -d "$ENV_DIR" ]; then
+if [[ $DRY_RUN -eq 1 ]]; then
+    if [ -d "$ENV_DIR" ]; then
+        would "rm -rf $ENV_DIR   (remove the existing environment)"
+    else
+        info "No existing environment at $ENV_DIR — nothing to remove."
+    fi
+elif [ -d "$ENV_DIR" ]; then
     info "Found an existing environment at $ENV_DIR — removing it to start clean..."
     rm -rf "$ENV_DIR"
     ok "Old environment removed."
@@ -233,6 +285,18 @@ teach "environment' so its libraries never collide with the system's Python."
 # ---------------------------------------------------------------------------
 step "Step 4 — Make sure a suitable Python is available"
 # ---------------------------------------------------------------------------
+if [[ $DRY_RUN -eq 1 ]]; then
+    would "sudo apt update"
+    would "sudo apt install -y python3.12 python3.12-venv"
+    info "If Python 3.12 is unavailable, the real run instead:"
+    would "  sudo apt install -y build-essential libssl-dev ... (pyenv build deps)"
+    would "  curl https://pyenv.run | bash"
+    would "  append pyenv init lines to ~/.bashrc"
+    would "  pyenv install 3.11.9"
+    PYTHON_BIN="python3.12"
+    teach "pyenv builds a private copy of Python from source, kept under"
+    teach "~/.pyenv, without touching the Python the system itself relies on."
+else
 info "Checking for Python 3.12 in the system repositories..."
 sudo apt update -qq
 
@@ -276,24 +340,32 @@ else
     ok "Python 3.11.9 is ready."
     teach "pyenv builds a private copy of Python from source, kept under"
     teach "~/.pyenv, without touching the Python the system itself relies on."
-fi
+fi     # end: Python 3.12 vs 3.11 fallback
+fi     # end: dry-run vs real
 
 # ---------------------------------------------------------------------------
 step "Step 5 — Create the virtual environment and install Open WebUI"
 # ---------------------------------------------------------------------------
-info "Creating the virtual environment at $ENV_DIR using $PYTHON_BIN..."
-"$PYTHON_BIN" -m venv "$ENV_DIR"
+if [[ $DRY_RUN -eq 1 ]]; then
+    would "$PYTHON_BIN -m venv $ENV_DIR"
+    would "source $ENV_DIR/bin/activate"
+    would "pip install --upgrade pip"
+    would "pip install open-webui"
+else
+    info "Creating the virtual environment at $ENV_DIR using $PYTHON_BIN..."
+    "$PYTHON_BIN" -m venv "$ENV_DIR"
 
-# shellcheck disable=SC1091
-source "$ENV_DIR/bin/activate"
-info "Active Python version: $(python3 --version)"
+    # shellcheck disable=SC1091
+    source "$ENV_DIR/bin/activate"
+    info "Active Python version: $(python3 --version)"
 
-info "Upgrading pip..."
-pip install --upgrade pip
+    info "Upgrading pip..."
+    pip install --upgrade pip
 
-info "Installing Open WebUI — this may take a few minutes..."
-pip install open-webui
-ok "Open WebUI is installed."
+    info "Installing Open WebUI — this may take a few minutes..."
+    pip install open-webui
+    ok "Open WebUI is installed."
+fi
 
 teach "Open WebUI is the chat website you open in a browser. It does not run"
 teach "any models itself — it forwards your messages to Ollama on port 11434"
@@ -302,8 +374,12 @@ teach "and shows you the replies. Two programs, one job each."
 # ---------------------------------------------------------------------------
 step "Setup complete"
 # ---------------------------------------------------------------------------
-ok "Ollama is running with the $OLLAMA_MODEL model."
-ok "Open WebUI is installed in $ENV_DIR."
+if [[ $DRY_RUN -eq 1 ]]; then
+    ok "Dry run finished — nothing was installed or changed."
+else
+    ok "Ollama is running with the $OLLAMA_MODEL model."
+    ok "Open WebUI is installed in $ENV_DIR."
+fi
 echo
 info "To start Open WebUI now, or again after a reboot, run:"
 info "    source $ENV_DIR/bin/activate"

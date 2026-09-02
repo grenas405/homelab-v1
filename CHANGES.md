@@ -30,10 +30,18 @@ All notable changes to this homelab setup.
 - Generic `render_table` helper: computed column widths, per-column
   left/right alignment, box-drawing glyphs that drop to ASCII (`+ - |`) when
   colour is unavailable.
+- **`--dry-run` / `-n` option** (plus `--help` / `-h`): walks every step and
+  prints the full banner, all logging, and the real hardware report, but
+  installs nothing and changes no files. Each mutating command is shown as a
+  `~ would run: …` line. The confirmation prompt is skipped in this mode.
+  Intended for previewing the output on a machine that is *not* the target.
 - `README.md` orientation doc.
 
 ### Changed
 - All previous `echo` status lines converted to the new logging helpers.
+- `ollama --version` output is now parsed for a bare semver, so the
+  "already installed" line reads `(v0.12.6)` instead of echoing Ollama's
+  "could not connect" warning.
 
 ### Fixed
 - Removed a stray `p` after the "Python 3.12 not available in the repos."

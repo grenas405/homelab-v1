@@ -27,6 +27,17 @@ The script narrates each step with colour-coded logging and "Homelab note"
 asides, so the run doubles as a walkthrough of how the pieces fit together.
 It is safe to re-run: existing installs and downloads are detected and skipped.
 
+### Preview without installing
+
+```bash
+./setup.sh --dry-run
+```
+
+Walks every step and prints the banner, all logging, and the real hardware
+report, but installs nothing and changes no files — each action is shown as a
+`~ would run: …` line. Handy for seeing the output on a machine that is *not*
+Eric's workstation.
+
 ## Starting Open WebUI later
 
 ```bash
