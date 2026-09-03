@@ -71,3 +71,20 @@ It closes with a rule of thumb for reading those numbers: a 4-bit-quantized
 model needs roughly its parameter count in billions × 0.6–0.75 GiB of VRAM to
 run entirely on the GPU; with less, Ollama splits it between GPU and system RAM
 and runs slower.
+
+## Learning materials
+
+`learn/` holds a self-contained "field handbook" — six standalone HTML pages,
+no build step, no internet. After cloning, open `learn/index.html` in any
+browser.
+
+| Plate | Covers |
+|-------|--------|
+| 01 · Models & tokens | parameters, tokens, context windows, quantization — with a live token sketch |
+| 02 · Ollama | the local model server, the `:11434` API, and the commands you'll use |
+| 03 · Open WebUI | the browser front end, how it talks to Ollama, starting and stopping it |
+| 04 · Hardware | VRAM vs RAM, GPU offload, and a "will this model fit" calculator |
+| 05 · Reading `setup.sh` | a tour of the script, the `--dry-run` flag, and the bash behind it |
+
+Each page has a short self-check and remembers which plates have been read
+(in that browser only, via `localStorage`).

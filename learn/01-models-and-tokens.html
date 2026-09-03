@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plate 01 — What the machine thinks in</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --ink:#12161C; --paper:#E7E6DD; --paper-2:#EFEEE6;
+    --rule:#B9B8AD; --rule-soft:#CFCEC4;
+    --amber:#C0821A; --teal:#1C6A66; --wrong:#B44b41;
+    --text:#20242B; --text-soft:#565A5F;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+      --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+    --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);
+    font-size:1.15rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+  a{color:var(--teal);text-underline-offset:2px}
+  a:hover{color:var(--amber)}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  .shell{max-width:78rem;margin:0 auto;padding:0 1.5rem}
+  .masthead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+    border-bottom:1px solid var(--rule);padding:1.1rem 0 .9rem;font-family:var(--mono)}
+  .masthead .mark{font-size:.82rem;color:var(--text-soft)}
+  .masthead .mark a{color:var(--text-soft);text-decoration:none}
+  .masthead .mark a:hover{color:var(--amber)}
+  .toggle{font-family:var(--mono);font-size:.8rem;background:none;border:1px solid var(--rule);
+    color:var(--text-soft);padding:.32rem .6rem;cursor:pointer}
+  .toggle:hover{border-color:var(--text-soft);color:var(--ink)}
+
+  .layout{display:flex;gap:3.4rem;padding:2.4rem 0 5rem}
+  .rail{flex:0 0 11rem;display:none}
+  @media (min-width:940px){.rail{display:block}}
+  .rail-inner{position:sticky;top:1.8rem;font-family:var(--mono);font-size:.84rem}
+  .rail ol{list-style:none;margin:0;padding:0;counter-reset:p}
+  .rail li{counter-increment:p}
+  .rail a{display:flex;gap:.55rem;padding:.28rem 0;color:var(--text-soft);text-decoration:none;align-items:baseline}
+  .rail a:hover{color:var(--ink)}
+  .rail a .n::before{content:counter(p,decimal-leading-zero)}
+  .rail a .n{color:var(--rule)}
+  .rail a[aria-current="page"]{color:var(--ink)}
+  .rail a[aria-current="page"] .n{color:var(--amber)}
+  .rail a.done .n{color:var(--teal)}
+  .rail .home{display:block;margin-bottom:1rem;color:var(--text-soft);text-decoration:none}
+  .rail .home:hover{color:var(--amber)}
+  .rail .prog{margin-top:1.3rem;color:var(--text-soft);font-size:.78rem}
+  .rail .bar{height:3px;background:var(--rule-soft);margin-top:.4rem}
+  .rail .bar > i{display:block;height:100%;background:var(--amber);width:0;transition:width .45s ease}
+
+  .main{flex:1 1 auto;min-width:0;max-width:68ch}
+  .plate-no{font-family:var(--mono);font-weight:500;letter-spacing:-.02em;
+    font-size:clamp(2.4rem,7vw,3.6rem);line-height:1;color:var(--rule)}
+  .plate-title{font-family:var(--mono);font-weight:600;letter-spacing:-.015em;
+    font-size:clamp(1.7rem,4.4vw,2.5rem);line-height:1.12;margin:.35rem 0 0;color:var(--ink)}
+  .standfirst{font-size:1.2rem;color:var(--text-soft);margin:1rem 0 0;max-width:60ch}
+
+  .main h2{font-family:var(--mono);font-weight:600;font-size:1.24rem;letter-spacing:-.01em;
+    margin:3rem 0 .2rem;color:var(--ink)}
+  .main h2::before{content:"";display:block;width:2.2rem;border-top:2px solid var(--amber);margin-bottom:.9rem}
+  .main h3{font-family:var(--mono);font-weight:600;font-size:1rem;margin:1.8rem 0 .3rem;color:var(--ink)}
+  .main p{margin:1.1rem 0}
+  .main ul{margin:1.1rem 0;padding-left:1.2rem}
+  .main li{margin:.4rem 0}
+  .main strong{color:var(--ink)}
+  :not(pre) > code{font-family:var(--mono);font-size:.9em;background:var(--rule-soft);padding:.06em .35em;border-radius:2px}
+
+  .aside{border-left:3px solid var(--rule);padding:.3rem 0 .3rem 1rem;margin:1.6rem 0;
+    color:var(--text-soft);font-size:1rem}
+  .aside b{font-family:var(--mono);font-weight:600;font-size:.82rem;color:var(--text-soft);display:block;margin-bottom:.25rem}
+
+  .bench{border:1px solid var(--rule);background:var(--paper-2);margin:2rem 0}
+  .bench-tab{font-family:var(--mono);font-size:.8rem;color:var(--text-soft);
+    padding:.55rem .9rem;border-bottom:1px solid var(--rule);border-left:3px solid var(--amber)}
+  .bench-body{padding:1.1rem .95rem 1.3rem}
+  .bench label{font-family:var(--mono);font-size:.8rem;color:var(--text-soft);display:block;margin:0 0 .4rem}
+  .bench textarea,.bench input,.bench select{width:100%;font:inherit;font-size:1rem;
+    background:var(--paper);color:var(--text);border:1px solid var(--rule);padding:.55rem .6rem}
+  .bench textarea{font-family:var(--mono);font-size:.92rem;resize:vertical;min-height:4.5rem}
+  .tok-out{margin-top:.9rem;line-height:2.1}
+  .tok{display:inline-block;font-family:var(--mono);font-size:.82rem;background:var(--paper);
+    border:1px solid var(--rule);padding:.08rem .3rem;margin:0 .12rem .2rem 0;white-space:pre}
+  .tok:nth-child(3n+1){border-color:var(--amber)}
+  .tok:nth-child(3n+2){border-color:var(--teal)}
+  .readout{font-family:var(--mono);font-size:.86rem;color:var(--text-soft);margin-top:.9rem}
+  .readout b{color:var(--ink);font-weight:600}
+
+  table.spec{width:100%;border-collapse:collapse;margin:1.6rem 0;font-size:.98rem}
+  table.spec th,table.spec td{border:1px solid var(--rule);padding:.5rem .65rem;text-align:left;vertical-align:top}
+  table.spec th{font-family:var(--mono);font-weight:600;font-size:.82rem;color:var(--text-soft);background:var(--paper-2)}
+  table.spec td:first-child{font-family:var(--mono);font-size:.9rem;white-space:nowrap}
+
+  .check{border-top:1px solid var(--rule);margin-top:3.6rem;padding-top:1.6rem}
+  .check h2{margin-top:0}
+  .q{margin:1.6rem 0}
+  .q > p{font-weight:600;color:var(--ink);margin:0 0 .5rem}
+  .opt{display:block;width:100%;text-align:left;font:inherit;font-size:1rem;background:var(--paper-2);
+    border:1px solid var(--rule);padding:.6rem .8rem;margin:.4rem 0;cursor:pointer;color:var(--text)}
+  .opt:hover{border-color:var(--text-soft)}
+  .q.answered .opt{cursor:default}
+  .opt.right{border-color:var(--teal);box-shadow:inset 3px 0 0 var(--teal)}
+  .opt.wrong{border-color:var(--wrong);box-shadow:inset 3px 0 0 var(--wrong);opacity:.75}
+  .why{font-size:.96rem;color:var(--text-soft);margin:.55rem 0 0;display:none}
+  .q.answered .why{display:block}
+
+  .done-row{margin:2.6rem 0 0}
+  .mark-btn{font-family:var(--mono);font-size:.86rem;background:var(--paper-2);border:1px solid var(--rule);
+    color:var(--ink);padding:.55rem .9rem;cursor:pointer}
+  .mark-btn:hover{border-color:var(--amber)}
+  .mark-btn[disabled]{color:var(--teal);border-color:var(--teal);cursor:default}
+
+  .pager{display:flex;justify-content:space-between;gap:1rem;margin-top:3rem;
+    border-top:1px solid var(--rule);padding-top:1.2rem;font-family:var(--mono);font-size:.9rem}
+  .pager a{display:flex;flex-direction:column;gap:.15rem;text-decoration:none;color:var(--ink);max-width:46%}
+  .pager a:hover{color:var(--amber)}
+  .pager .dir{font-size:.72rem;color:var(--text-soft)}
+  .pager .n{text-align:right}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <span class="mark"><a href="index.html">Local AI Workstation</a> &nbsp;/ &nbsp;plate 01</span>
+    <button class="toggle" type="button" onclick="__toggleTheme()">light / dark</button>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" aria-label="Plates">
+      <div class="rail-inner">
+        <a class="home" href="index.html">&larr; contents</a>
+        <ol>
+          <li><a href="01-models-and-tokens.html" data-plate="01" aria-current="page"><span class="n"></span> models &amp; tokens</a></li>
+          <li><a href="02-ollama.html" data-plate="02"><span class="n"></span> ollama</a></li>
+          <li><a href="03-open-webui.html" data-plate="03"><span class="n"></span> open webui</a></li>
+          <li><a href="04-hardware.html" data-plate="04"><span class="n"></span> hardware</a></li>
+          <li><a href="05-the-setup-script.html" data-plate="05"><span class="n"></span> setup.sh</a></li>
+        </ol>
+        <div class="prog"><span data-progress-count>0 of 5</span> read
+          <span class="bar"><i data-progress-bar></i></span>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <p class="plate-no">01</p>
+      <h1 class="plate-title">What the machine thinks in</h1>
+      <p class="standfirst">Before you can reason about speed, memory, or model choice, it helps to know what a
+      language model actually is and what a "token" is. This plate is the vocabulary the rest of the handbook
+      leans on.</p>
+
+      <h2>A model is a big pile of numbers</h2>
+      <p>A language model is a file full of numbers called <strong>parameters</strong> (also called weights).
+      <code>qwen3:8b</code> has about <strong>8 billion</strong> of them — that's what the <code>8b</code> means.
+      Each parameter is a small dial that was tuned during training so that, given some text, the model produces
+      a sensible guess at what comes next.</p>
+      <p>That is the whole trick. The model reads the conversation so far and predicts the next chunk of text,
+      then the next, then the next, one chunk at a time, until it decides to stop. Everything it "knows" is
+      baked into those 8 billion dials. It is not looking anything up, and after <code>setup.sh</code> runs, it
+      is not connected to anything.</p>
+
+      <div class="aside">
+        <b>Why the parameter count matters</b>
+        More parameters generally means better answers, but the file gets bigger and every predicted chunk
+        takes more arithmetic — so it runs slower and needs more memory. Plate&nbsp;04 turns this into numbers.
+      </div>
+
+      <h2>Text goes in as tokens</h2>
+      <p>The model doesn't see letters or words. Text is first chopped into <strong>tokens</strong> — pieces
+      that are often a whole short word, sometimes part of a longer word, sometimes just punctuation or a
+      space. A rough rule for English is <strong>one token per ~4 characters</strong>, or about
+      <strong>0.75 tokens per word</strong>.</p>
+      <p>Type something below to see it split up. This is an approximation — the real tokenizer for
+      <code>qwen3:8b</code> has its own vocabulary — but the shape is right, and the count is close enough to
+      reason with.</p>
+
+      <div class="bench">
+        <div class="bench-tab">token sketch</div>
+        <div class="bench-body">
+          <label for="tokIn">Type or paste text</label>
+          <textarea id="tokIn" spellcheck="false">Summarize this in two sentences for a non-technical teammate.</textarea>
+          <div class="tok-out" id="tokOut" aria-live="polite"></div>
+          <div class="readout" id="tokReadout"></div>
+        </div>
+      </div>
+
+      <h2>The context window is the desk</h2>
+      <p>Everything the model can look at right now — the system prompt, the conversation so far, the documents
+      you pasted, and the reply it's currently writing — has to fit inside its <strong>context window</strong>,
+      measured in tokens. Think of it as the size of the desk. When the desk is full, the oldest papers fall
+      off the back: early parts of a long conversation stop influencing the answer.</p>
+      <p>A model with an 8,000-token window can hold very roughly <strong>6,000 words</strong> of combined
+      prompt and reply. Longer windows exist; they cost more memory and slow generation down, because the model
+      re-reads the whole desk for every chunk it writes.</p>
+
+      <h2>Quantization trades precision for room</h2>
+      <p>Each parameter is stored as a number. Store it at full precision (16 bits) and an 8-billion-parameter
+      model needs about <strong>16&nbsp;GB</strong> just to sit in memory. <strong>Quantization</strong> rounds
+      those numbers to fewer bits so the file shrinks. The common setting is <strong>Q4</strong> — roughly
+      4 bits per parameter.</p>
+
+      <table class="spec">
+        <thead><tr><th>Precision</th><th>Bits / param</th><th>Size of an 8B model</th><th>Quality</th></tr></thead>
+        <tbody>
+          <tr><td>FP16</td><td>16</td><td>~16 GB</td><td>reference</td></tr>
+          <tr><td>Q8</td><td>8</td><td>~8.5 GB</td><td>practically identical</td></tr>
+          <tr><td>Q4</td><td>~4.5</td><td>~5&ndash;6 GB</td><td>very close; the usual choice</td></tr>
+          <tr><td>Q2</td><td>~2.5</td><td>~3.5 GB</td><td>noticeably worse; last resort</td></tr>
+        </tbody>
+      </table>
+
+      <p>When you run <code>ollama pull qwen3:8b</code>, you get a Q4 build by default. That's why the download
+      is around 5&nbsp;GB and not 16. Plate&nbsp;04 uses these sizes to work out what fits on your GPU.</p>
+
+      <div class="aside">
+        <b>The one-line version</b>
+        A model predicts the next token. Tokens are ~4 characters. The context window is how many tokens it can
+        see at once. Quantization shrinks the model by storing each parameter in fewer bits, trading a little
+        quality for a lot of room.
+      </div>
+
+      <section class="check">
+        <h2>Self-check</h2>
+
+        <div class="q">
+          <p>1. What does the <code>8b</code> in <code>qwen3:8b</code> refer to?</p>
+          <button class="opt" data-correct="1">The model has about 8 billion parameters</button>
+          <button class="opt">It needs 8 GB of disk space</button>
+          <button class="opt">It can hold 8,000 tokens of context</button>
+          <button class="opt">It was the 8th model Ollama released</button>
+          <p class="why">Parameters are the tuned numbers inside the model. Disk size and context window are
+          separate things that happen to also be measured in gigabytes and thousands.</p>
+        </div>
+
+        <div class="q">
+          <p>2. You paste a 1,200-word document into the chat. Roughly how many tokens is that?</p>
+          <button class="opt">About 300</button>
+          <button class="opt" data-correct="1">About 900</button>
+          <button class="opt">About 1,200</button>
+          <button class="opt">About 4,800</button>
+          <p class="why">Around 0.75 tokens per word, so 1,200 &times; 0.75 &asymp; 900. That has to share the
+          context window with the system prompt, the rest of the conversation, and the reply.</p>
+        </div>
+
+        <div class="q">
+          <p>3. Why is the default <code>qwen3:8b</code> download about 5 GB rather than 16 GB?</p>
+          <button class="opt">Ollama compresses it during download and expands it later</button>
+          <button class="opt" data-correct="1">It ships quantized to roughly 4 bits per parameter (Q4)</button>
+          <button class="opt">Only half the parameters are included</button>
+          <button class="opt">It downloads the rest on first use</button>
+          <p class="why">Q4 stores each parameter in about a quarter of the bits of FP16, so the file is
+          roughly a third of the size, for a small quality cost.</p>
+        </div>
+      </section>
+
+      <div class="done-row">
+        <button class="mark-btn" id="markBtn" type="button" data-plate="01">Mark plate 01 as read</button>
+      </div>
+
+      <nav class="pager">
+        <a href="index.html"><span class="dir">back</span><span>Contents</span></a>
+        <a href="02-ollama.html"><span class="dir n">next</span><span class="n">02 · The engine room</span></a>
+      </nav>
+    </main>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, KEY='law-theme', saved=null;
+    try{saved=localStorage.getItem(KEY);}catch(e){}
+    if(saved){root.setAttribute('data-theme',saved);}
+    function current(){return root.getAttribute('data-theme')||
+      (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+    window.__toggleTheme=function(){
+      var next=current()==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem(KEY,next);}catch(e){}
+    };
+  })();
+
+  (function(){
+    var KEY='law-progress', TOTAL=5;
+    function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+    function write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+    function paint(){
+      var o=read(), n=Object.keys(o).filter(function(k){return o[k];}).length;
+      document.querySelectorAll('[data-progress-count]').forEach(function(el){el.textContent=n+' of '+TOTAL;});
+      document.querySelectorAll('[data-progress-bar]').forEach(function(el){el.style.width=(n/TOTAL*100)+'%';});
+      document.querySelectorAll('.rail a[data-plate]').forEach(function(a){
+        a.classList.toggle('done',!!o[a.getAttribute('data-plate')]);
+      });
+      var b=document.getElementById('markBtn');
+      if(b && o[b.getAttribute('data-plate')]){b.disabled=true;b.textContent='Plate 01 marked as read';}
+    }
+    var mb=document.getElementById('markBtn');
+    if(mb) mb.addEventListener('click',function(){
+      var o=read(); o[mb.getAttribute('data-plate')]=true; write(o); paint();
+    });
+    paint();
+  })();
+
+  /* quiz */
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.opt'); if(!b) return;
+    var q=b.closest('.q'); if(!q || q.classList.contains('answered')) return;
+    q.classList.add('answered');
+    q.querySelectorAll('.opt').forEach(function(o){
+      if(o.getAttribute('data-correct')==='1') o.classList.add('right');
+      else if(o===b) o.classList.add('wrong');
+    });
+  });
+
+  /* token sketch */
+  (function(){
+    var inp=document.getElementById('tokIn'), out=document.getElementById('tokOut'), ro=document.getElementById('tokReadout');
+    if(!inp) return;
+    function tokenize(t){
+      // approximate: split on whitespace, then peel punctuation, then break long words into ~4-char pieces
+      var raw=t.replace(/\s+/g,' ').trim();
+      if(!raw) return [];
+      var out=[];
+      raw.split(' ').forEach(function(w,i){
+        if(i>0) out.push(' ');
+        var m=w.match(/^([^\wÀ-ÿ]*)([\wÀ-ÿ'’-]*)([^\wÀ-ÿ]*)$/);
+        var pre=m?m[1]:'', core=m?m[2]:w, post=m?m[3]:'';
+        if(pre) pre.split('').forEach(function(c){out.push(c);});
+        while(core.length>6){ out.push(core.slice(0,4)); core=core.slice(4); }
+        if(core) out.push(core);
+        if(post) post.split('').forEach(function(c){out.push(c);});
+      });
+      return out;
+    }
+    function render(){
+      var toks=tokenize(inp.value);
+      out.innerHTML='';
+      toks.forEach(function(tk){
+        var s=document.createElement('span');
+        s.className='tok';
+        s.textContent=tk===' '?'␣':tk;
+        out.appendChild(s);
+      });
+      var chars=inp.value.length;
+      var words=(inp.value.trim().match(/\S+/g)||[]).length;
+      ro.innerHTML='<b>'+toks.length+'</b> tokens (sketch) &nbsp;·&nbsp; '+words+' words &nbsp;·&nbsp; '
+        +chars+' characters &nbsp;·&nbsp; ~'+Math.max(1,Math.round(chars/4))+' tokens by the 4-chars rule';
+    }
+    inp.addEventListener('input',render);
+    render();
+  })();
+</script>
+</body>
+</html>

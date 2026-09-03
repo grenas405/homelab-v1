@@ -5,6 +5,23 @@ All notable changes to this homelab setup.
 ## 2026-09-02
 
 ### Added
+- **`learn/` field handbook** — six standalone HTML/CSS/JS pages, no build step
+  and no network use, meant to be opened from a clone with
+  `learn/index.html`:
+  - `index.html` — overview, an inline-SVG signal-path diagram, and a contents
+    list with per-browser progress tracking.
+  - `01-models-and-tokens.html` — parameters, tokens, context windows,
+    quantization; includes an interactive token-sketch widget.
+  - `02-ollama.html` — the local model server, the `:11434` API, and an
+    `ollama` command explorer with sample output.
+  - `03-open-webui.html` — the browser front end, its link to Ollama, and an
+    annotated chat-screen mock.
+  - `04-hardware.html` — VRAM vs system RAM, GPU offload, and a "will this
+    model fit" estimator that uses the same rule of thumb `setup.sh` prints.
+  - `05-the-setup-script.html` — a walkthrough of `setup.sh`, a real-run vs
+    `--dry-run` output toggle, and a bash phrasebook.
+  - Each page has a self-check quiz, a light/dark toggle, respects
+    `prefers-reduced-motion`, and stores progress in `localStorage` only.
 - `setup.sh` now installs **Ollama** via the official installer, before the
   Open WebUI setup, with an idempotency guard so re-runs skip it.
 - Automatic download of the **`qwen3:8b`** model so the stack is usable on the

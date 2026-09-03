@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plate 05 — Reading the setup script</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --ink:#12161C; --paper:#E7E6DD; --paper-2:#EFEEE6;
+    --rule:#B9B8AD; --rule-soft:#CFCEC4;
+    --amber:#C0821A; --teal:#1C6A66; --wrong:#B44b41;
+    --text:#20242B; --text-soft:#565A5F;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+      --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+    --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);
+    font-size:1.15rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+  a{color:var(--teal);text-underline-offset:2px}
+  a:hover{color:var(--amber)}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  .shell{max-width:78rem;margin:0 auto;padding:0 1.5rem}
+  .masthead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+    border-bottom:1px solid var(--rule);padding:1.1rem 0 .9rem;font-family:var(--mono)}
+  .masthead .mark{font-size:.82rem;color:var(--text-soft)}
+  .masthead .mark a{color:var(--text-soft);text-decoration:none}
+  .masthead .mark a:hover{color:var(--amber)}
+  .toggle{font-family:var(--mono);font-size:.8rem;background:none;border:1px solid var(--rule);
+    color:var(--text-soft);padding:.32rem .6rem;cursor:pointer}
+  .toggle:hover{border-color:var(--text-soft);color:var(--ink)}
+
+  .layout{display:flex;gap:3.4rem;padding:2.4rem 0 5rem}
+  .rail{flex:0 0 11rem;display:none}
+  @media (min-width:940px){.rail{display:block}}
+  .rail-inner{position:sticky;top:1.8rem;font-family:var(--mono);font-size:.84rem}
+  .rail ol{list-style:none;margin:0;padding:0;counter-reset:p}
+  .rail li{counter-increment:p}
+  .rail a{display:flex;gap:.55rem;padding:.28rem 0;color:var(--text-soft);text-decoration:none;align-items:baseline}
+  .rail a:hover{color:var(--ink)}
+  .rail a .n::before{content:counter(p,decimal-leading-zero)}
+  .rail a .n{color:var(--rule)}
+  .rail a[aria-current="page"]{color:var(--ink)}
+  .rail a[aria-current="page"] .n{color:var(--amber)}
+  .rail a.done .n{color:var(--teal)}
+  .rail .home{display:block;margin-bottom:1rem;color:var(--text-soft);text-decoration:none}
+  .rail .home:hover{color:var(--amber)}
+  .rail .prog{margin-top:1.3rem;color:var(--text-soft);font-size:.78rem}
+  .rail .bar{height:3px;background:var(--rule-soft);margin-top:.4rem}
+  .rail .bar > i{display:block;height:100%;background:var(--amber);width:0;transition:width .45s ease}
+
+  .main{flex:1 1 auto;min-width:0;max-width:68ch}
+  .plate-no{font-family:var(--mono);font-weight:500;letter-spacing:-.02em;
+    font-size:clamp(2.4rem,7vw,3.6rem);line-height:1;color:var(--rule)}
+  .plate-title{font-family:var(--mono);font-weight:600;letter-spacing:-.015em;
+    font-size:clamp(1.7rem,4.4vw,2.5rem);line-height:1.12;margin:.35rem 0 0;color:var(--ink)}
+  .standfirst{font-size:1.2rem;color:var(--text-soft);margin:1rem 0 0;max-width:60ch}
+
+  .main h2{font-family:var(--mono);font-weight:600;font-size:1.24rem;letter-spacing:-.01em;
+    margin:3rem 0 .2rem;color:var(--ink)}
+  .main h2::before{content:"";display:block;width:2.2rem;border-top:2px solid var(--amber);margin-bottom:.9rem}
+  .main h3{font-family:var(--mono);font-weight:600;font-size:1rem;margin:1.8rem 0 .3rem;color:var(--ink)}
+  .main p{margin:1.1rem 0}
+  .main ul,.main ol.steps{margin:1.1rem 0;padding-left:1.2rem}
+  .main li{margin:.5rem 0}
+  .main strong{color:var(--ink)}
+  :not(pre) > code{font-family:var(--mono);font-size:.9em;background:var(--rule-soft);padding:.06em .35em;border-radius:2px}
+
+  .aside{border-left:3px solid var(--rule);padding:.3rem 0 .3rem 1rem;margin:1.6rem 0;color:var(--text-soft);font-size:1rem}
+  .aside b{font-family:var(--mono);font-weight:600;font-size:.82rem;color:var(--text-soft);display:block;margin-bottom:.25rem}
+
+  pre.term{background:#0E1216;color:#CBCBC2;border:1px solid var(--rule);margin:0;
+    padding:1rem 1.05rem;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.55}
+  .term .c{color:#5FD3CC}.term .a{color:#E7A93B}.term .g{color:#9BD17F}.term .d{color:#7E8792}.term .p{color:#C89BE0}
+
+  .panel{border:1px solid var(--rule);background:var(--paper-2);margin:2rem 0}
+  .panel-tab{display:flex;gap:.4rem;font-family:var(--mono);font-size:.8rem;color:var(--text-soft);
+    padding:.5rem .9rem;border-bottom:1px solid var(--rule);border-left:3px solid var(--amber);align-items:center}
+  .panel-tab .seg{margin-left:auto;display:flex;gap:.35rem}
+  .seg button{font:inherit;font-size:.78rem;background:var(--paper);border:1px solid var(--rule);
+    color:var(--text);padding:.25rem .55rem;cursor:pointer}
+  .seg button[aria-pressed="true"]{border-color:var(--amber);color:var(--ink);box-shadow:inset 0 -2px 0 var(--amber)}
+  .panel-body{padding:0}
+  .panel-note{font-size:.95rem;color:var(--text-soft);padding:.8rem .95rem 0}
+
+  .phrase{border:1px solid var(--rule);background:var(--paper-2);margin:2rem 0}
+  .phrase-tab{font-family:var(--mono);font-size:.8rem;color:var(--text-soft);
+    padding:.55rem .9rem;border-bottom:1px solid var(--rule);border-left:3px solid var(--amber)}
+  .phrase-body{padding:1rem .95rem 1.2rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem}
+  .chip{font-family:var(--mono);font-size:.82rem;background:var(--paper);border:1px solid var(--rule);
+    color:var(--text);padding:.32rem .55rem;cursor:pointer}
+  .chip:hover{border-color:var(--text-soft)}
+  .chip[aria-pressed="true"]{border-color:var(--amber);color:var(--ink);box-shadow:inset 0 -2px 0 var(--amber)}
+  .phrase-note{font-size:.98rem;color:var(--text-soft);min-height:3.2em}
+  .phrase-note b{font-family:var(--mono);font-size:.86rem;color:var(--ink);display:block;margin-bottom:.25rem}
+
+  .check{border-top:1px solid var(--rule);margin-top:3.6rem;padding-top:1.6rem}
+  .check h2{margin-top:0}
+  .q{margin:1.6rem 0}
+  .q > p{font-weight:600;color:var(--ink);margin:0 0 .5rem}
+  .opt{display:block;width:100%;text-align:left;font:inherit;font-size:1rem;background:var(--paper-2);
+    border:1px solid var(--rule);padding:.6rem .8rem;margin:.4rem 0;cursor:pointer;color:var(--text)}
+  .opt:hover{border-color:var(--text-soft)}
+  .q.answered .opt{cursor:default}
+  .opt.right{border-color:var(--teal);box-shadow:inset 3px 0 0 var(--teal)}
+  .opt.wrong{border-color:var(--wrong);box-shadow:inset 3px 0 0 var(--wrong);opacity:.75}
+  .why{font-size:.96rem;color:var(--text-soft);margin:.55rem 0 0;display:none}
+  .q.answered .why{display:block}
+
+  .done-row{margin:2.6rem 0 0}
+  .mark-btn{font-family:var(--mono);font-size:.86rem;background:var(--paper-2);border:1px solid var(--rule);
+    color:var(--ink);padding:.55rem .9rem;cursor:pointer}
+  .mark-btn:hover{border-color:var(--amber)}
+  .mark-btn[disabled]{color:var(--teal);border-color:var(--teal);cursor:default}
+
+  .pager{display:flex;justify-content:space-between;gap:1rem;margin-top:3rem;
+    border-top:1px solid var(--rule);padding-top:1.2rem;font-family:var(--mono);font-size:.9rem}
+  .pager a{display:flex;flex-direction:column;gap:.15rem;text-decoration:none;color:var(--ink);max-width:46%}
+  .pager a:hover{color:var(--amber)}
+  .pager .dir{font-size:.72rem;color:var(--text-soft)}
+  .pager .n{text-align:right}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <span class="mark"><a href="index.html">Local AI Workstation</a> &nbsp;/ &nbsp;plate 05</span>
+    <button class="toggle" type="button" onclick="__toggleTheme()">light / dark</button>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" aria-label="Plates">
+      <div class="rail-inner">
+        <a class="home" href="index.html">&larr; contents</a>
+        <ol>
+          <li><a href="01-models-and-tokens.html" data-plate="01"><span class="n"></span> models &amp; tokens</a></li>
+          <li><a href="02-ollama.html" data-plate="02"><span class="n"></span> ollama</a></li>
+          <li><a href="03-open-webui.html" data-plate="03"><span class="n"></span> open webui</a></li>
+          <li><a href="04-hardware.html" data-plate="04"><span class="n"></span> hardware</a></li>
+          <li><a href="05-the-setup-script.html" data-plate="05" aria-current="page"><span class="n"></span> setup.sh</a></li>
+        </ol>
+        <div class="prog"><span data-progress-count>0 of 5</span> read
+          <span class="bar"><i data-progress-bar></i></span>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <p class="plate-no">05</p>
+      <h1 class="plate-title">Reading the setup script</h1>
+      <p class="standfirst">You ran <code>setup.sh</code> once. This plate opens it up so the run stops being
+      magic: what each step does, how to preview it safely, and the handful of bash ideas it's built from.</p>
+
+      <h2>What it installs, in order</h2>
+      <p>The script is a guided sequence. It narrates itself as it goes, with cyan step headers and violet
+      "Homelab note" lines &mdash; those notes are the same explanations, live, that this handbook expands on.</p>
+      <ol class="steps">
+        <li><strong>A safety prompt.</strong> A banner names the target machine &mdash; <em>Eric Harvey's
+        Workstation</em> &mdash; and makes you type <code>yes</code> before it changes anything. This exists so
+        the script can't be run on the wrong box by reflex.</li>
+        <li><strong>Step 1 &mdash; Ollama.</strong> Installs the Ollama server, registers it as a service, and
+        waits until <code>localhost:11434</code> answers before moving on.</li>
+        <li><strong>Step 2 &mdash; the model.</strong> <code>ollama pull qwen3:8b</code>, skipped if you
+        already have it.</li>
+        <li><strong>Step 3 &mdash; a clean Python environment.</strong> Removes any old
+        <code>~/openwebui-env</code> so the install starts fresh.</li>
+        <li><strong>Step 4 &mdash; Python itself.</strong> Uses system Python 3.12 if available; otherwise
+        builds 3.11 from source with <code>pyenv</code>. Open WebUI needs one of those.</li>
+        <li><strong>Step 5 &mdash; Open WebUI.</strong> Creates the virtual environment and
+        <code>pip install open-webui</code> into it.</li>
+        <li><strong>The hardware report.</strong> Prints the GPU and CPU/RAM tables from Plate&nbsp;04, then
+        the VRAM rule of thumb.</li>
+      </ol>
+
+      <h2>Preview it first: --dry-run</h2>
+      <p>The script takes a <code>--dry-run</code> flag. In that mode it walks every step and prints the whole
+      narration &mdash; banner, step headers, notes, and the real hardware report &mdash; but installs nothing
+      and changes no files. Each action it <em>would</em> take is shown as a <code>~ would run:</code> line.
+      Flip the toggle to compare.</p>
+
+      <div class="panel">
+        <div class="panel-tab">setup.sh — Step 1
+          <span class="seg" id="runSeg">
+            <button data-mode="real" aria-pressed="true">real run</button>
+            <button data-mode="dry" aria-pressed="false">--dry-run</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <pre class="term" id="runTerm" aria-live="polite"></pre>
+        </div>
+        <p class="panel-note" id="runNote"></p>
+      </div>
+
+      <p>Use <code>--dry-run</code> to read what a script will do before you let it touch your machine
+      &mdash; a good habit for any install script, not just this one. <code>./setup.sh --help</code> lists the
+      options.</p>
+
+      <h2>It's safe to run again</h2>
+      <p>Most of the script checks before it acts: it skips Ollama if the command already exists, skips the
+      model if <code>ollama list</code> shows it, and re-uses a working Python. Re-running after a failed or
+      interrupted run generally just picks up where it left off. Step 3 always rebuilds the Open WebUI
+      environment from scratch &mdash; cheap, and it avoids half-installed states.</p>
+
+      <h2>The bash it's built from</h2>
+      <p>Every idea in the script, in plain terms. Tap one.</p>
+
+      <div class="phrase">
+        <div class="phrase-tab">bash phrasebook</div>
+        <div class="phrase-body">
+          <div class="chips" id="chips">
+            <button class="chip" data-k="set-e" aria-pressed="true">set -e</button>
+            <button class="chip" data-k="command-v">command -v</button>
+            <button class="chip" data-k="sudo">sudo</button>
+            <button class="chip" data-k="pipe">curl … | sh</button>
+            <button class="chip" data-k="func">functions</button>
+            <button class="chip" data-k="venv">virtual environment</button>
+            <button class="chip" data-k="service">systemd service</button>
+            <button class="chip" data-k="colorterm">COLORTERM</button>
+          </div>
+          <p class="phrase-note" id="phraseNote" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="aside">
+        <b>The one-line version</b>
+        <code>setup.sh</code> is a narrated, mostly re-runnable sequence: confirm the machine, install Ollama +
+        a model, build a Python environment, install Open WebUI, print your hardware. <code>--dry-run</code>
+        shows the whole thing without touching anything.
+      </div>
+
+      <h2>You're set up</h2>
+      <p>That's the stack. Ollama runs models on <code>:11434</code>. Open WebUI gives you a chat screen on
+      <code>:8080</code> &mdash; start it with <code>source ~/openwebui-env/bin/activate</code> then
+      <code>open-webui serve</code>. The hardware report tells you what size model your box will run well. If
+      something breaks, Plate&nbsp;02's health check is the first move.</p>
+
+      <section class="check">
+        <h2>Self-check</h2>
+
+        <div class="q">
+          <p>1. A colleague sends you an unfamiliar <code>install.sh</code>. Best first move?</p>
+          <button class="opt">Run it with <code>sudo</code> so it has permission to finish</button>
+          <button class="opt" data-correct="1">Read it — and if it offers a <code>--dry-run</code>, use that to see what it would do</button>
+          <button class="opt">Run it and watch for errors</button>
+          <button class="opt">Rename it to <code>.txt</code> so it can't run</button>
+          <p class="why">Reading an install script before running it is the habit. A dry-run mode, when it
+          exists, shows the intended actions without making them.</p>
+        </div>
+
+        <div class="q">
+          <p>2. Step 1 finishes installing Ollama but the script stops before pulling the model, saying the API
+          didn't respond. What is it waiting on?</p>
+          <button class="opt">Your confirmation to continue</button>
+          <button class="opt">A download from the internet</button>
+          <button class="opt" data-correct="1">The Ollama service to start answering on <code>localhost:11434</code></button>
+          <button class="opt">The GPU driver to load</button>
+          <p class="why">The script polls <code>localhost:11434</code> and only proceeds once the server
+          answers, so it doesn't try to pull a model into a server that isn't ready.</p>
+        </div>
+
+        <div class="q">
+          <p>3. You run <code>./setup.sh</code> a second time, a week later. What happens to <code>qwen3:8b</code>?</p>
+          <button class="opt">It's downloaded again from scratch</button>
+          <button class="opt" data-correct="1">It's detected in <code>ollama list</code> and the pull is skipped</button>
+          <button class="opt">It's deleted and not replaced</button>
+          <button class="opt">It's upgraded to a larger model</button>
+          <p class="why">Step 2 checks whether the model is already present and skips the multi-gigabyte
+          download if so. Re-running the script is safe.</p>
+        </div>
+      </section>
+
+      <div class="done-row">
+        <button class="mark-btn" id="markBtn" type="button" data-plate="05">Mark plate 05 as read</button>
+      </div>
+
+      <nav class="pager">
+        <a href="04-hardware.html"><span class="dir">back</span><span>04 · Fuel &amp; workspace</span></a>
+        <a href="index.html"><span class="dir n">done</span><span class="n">Back to contents</span></a>
+      </nav>
+    </main>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, KEY='law-theme', saved=null;
+    try{saved=localStorage.getItem(KEY);}catch(e){}
+    if(saved){root.setAttribute('data-theme',saved);}
+    function current(){return root.getAttribute('data-theme')||
+      (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+    window.__toggleTheme=function(){
+      var next=current()==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem(KEY,next);}catch(e){}
+    };
+  })();
+
+  (function(){
+    var KEY='law-progress', TOTAL=5;
+    function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+    function write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+    function paint(){
+      var o=read(), n=Object.keys(o).filter(function(k){return o[k];}).length;
+      document.querySelectorAll('[data-progress-count]').forEach(function(el){el.textContent=n+' of '+TOTAL;});
+      document.querySelectorAll('[data-progress-bar]').forEach(function(el){el.style.width=(n/TOTAL*100)+'%';});
+      document.querySelectorAll('.rail a[data-plate]').forEach(function(a){
+        a.classList.toggle('done',!!o[a.getAttribute('data-plate')]);
+      });
+      var b=document.getElementById('markBtn');
+      if(b && o[b.getAttribute('data-plate')]){b.disabled=true;b.textContent='Plate 05 marked as read';}
+    }
+    var mb=document.getElementById('markBtn');
+    if(mb) mb.addEventListener('click',function(){
+      var o=read(); o[mb.getAttribute('data-plate')]=true; write(o); paint();
+    });
+    paint();
+  })();
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.opt'); if(!b) return;
+    var q=b.closest('.q'); if(!q || q.classList.contains('answered')) return;
+    q.classList.add('answered');
+    q.querySelectorAll('.opt').forEach(function(o){
+      if(o.getAttribute('data-correct')==='1') o.classList.add('right');
+      else if(o===b) o.classList.add('wrong');
+    });
+  });
+
+  /* real vs dry-run */
+  (function(){
+    var REAL =
+      '<span class="c">▶ Step 1 — Install Ollama</span>\n'+
+      '   <span class="p">🎓 Ollama is a small server that runs large language models on your own</span>\n'+
+      '   <span class="p">🎓 hardware. Anything you type stays on this machine.</span>\n'+
+      '   Downloading and running the official installer from https://ollama.com ...\n'+
+      '   <span class="g">✔ Ollama installed.</span>\n'+
+      '   Enabling the ollama system service so it starts automatically on boot...\n'+
+      '   Waiting for the Ollama API to respond on http://localhost:11434 ...\n'+
+      '   <span class="g">✔ Ollama API is up.</span>';
+    var DRY =
+      '<span class="c">▶ Step 1 — Install Ollama</span>\n'+
+      '   <span class="p">🎓 Ollama is a small server that runs large language models on your own</span>\n'+
+      '   <span class="p">🎓 hardware. Anything you type stays on this machine.</span>\n'+
+      '   <span class="d">~ would run: curl -fsSL https://ollama.com/install.sh | sh</span>\n'+
+      '   <span class="d">~ would run: sudo systemctl enable --now ollama</span>\n'+
+      '   <span class="d">~ would run: poll http://localhost:11434/api/tags until the API answers</span>';
+    var NOTE={
+      real:'The real run downloads and installs, registers the service, and blocks until the server answers.',
+      dry :'Same narration and the same teach notes — but every action that would change the machine is printed instead of run.'
+    };
+    var term=document.getElementById('runTerm'), note=document.getElementById('runNote'), seg=document.getElementById('runSeg');
+    function set(mode){
+      Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){
+        b.setAttribute('aria-pressed', b.getAttribute('data-mode')===mode ? 'true':'false');
+      });
+      term.innerHTML = mode==='dry' ? DRY : REAL;
+      note.textContent = NOTE[mode];
+    }
+    seg.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      set(b.getAttribute('data-mode'));
+    });
+    set('real');
+  })();
+
+  /* bash phrasebook */
+  (function(){
+    var P={
+      'set-e':['set -e','Stop the script the moment any command fails, instead of blindly continuing. It means a failed install can’t leave you in a half-configured state.'],
+      'command-v':['command -v ollama','Ask "is this program on the system?" without running it. The script uses it to skip steps that are already done — this is what makes re-running safe.'],
+      'sudo':['sudo','Run one command as the administrator. Installing system packages and registering a service need it; the script asks for your password once and only for those parts.'],
+      'pipe':['curl … | sh','Download a script and hand it straight to the shell to run. Convenient, but you’re trusting whatever comes back — which is why reading a script first, or using its --dry-run, matters.'],
+      'func':['functions','Named blocks of commands. The script defines <code>step</code>, <code>info</code>, <code>ok</code>, <code>warn</code>, <code>teach</code>, and <code>would</code> so every line of output has a consistent shape and colour.'],
+      'venv':['virtual environment','A private copy of Python plus its own package folder, at <code>~/openwebui-env</code>. Open WebUI’s libraries go there so they can’t collide with anything the system relies on. <code>activate</code> switches your shell into it.'],
+      'service':['systemd service','A program the system starts and keeps running in the background, and restarts after a reboot, with no one logged in. Ollama is registered as one; Open WebUI is not, which is why you start it by hand.'],
+      'colorterm':['COLORTERM','An environment variable a terminal sets to say it can show 24-bit colour. The script checks it and falls back to plain text when colour isn’t available — so the log is readable even piped to a file.']
+    };
+    var chips=document.getElementById('chips'), note=document.getElementById('phraseNote');
+    function set(k){
+      Array.prototype.forEach.call(chips.querySelectorAll('.chip'),function(b){
+        b.setAttribute('aria-pressed', b.getAttribute('data-k')===k ? 'true':'false');
+      });
+      note.innerHTML='<b>'+P[k][0]+'</b>'+P[k][1];
+    }
+    chips.addEventListener('click',function(e){
+      var b=e.target.closest('.chip'); if(!b) return;
+      set(b.getAttribute('data-k'));
+    });
+    set('set-e');
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plate 03 — The console</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --ink:#12161C; --paper:#E7E6DD; --paper-2:#EFEEE6;
+    --rule:#B9B8AD; --rule-soft:#CFCEC4;
+    --amber:#C0821A; --teal:#1C6A66; --wrong:#B44b41;
+    --text:#20242B; --text-soft:#565A5F;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+      --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23; --rule:#333A44; --rule-soft:#242A32;
+    --amber:#E7A93B; --teal:#54CFC8; --wrong:#E0796E; --text:#D5D3C9; --text-soft:#969A98;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);
+    font-size:1.15rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+  a{color:var(--teal);text-underline-offset:2px}
+  a:hover{color:var(--amber)}
+  a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  .shell{max-width:78rem;margin:0 auto;padding:0 1.5rem}
+  .masthead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+    border-bottom:1px solid var(--rule);padding:1.1rem 0 .9rem;font-family:var(--mono)}
+  .masthead .mark{font-size:.82rem;color:var(--text-soft)}
+  .masthead .mark a{color:var(--text-soft);text-decoration:none}
+  .masthead .mark a:hover{color:var(--amber)}
+  .toggle{font-family:var(--mono);font-size:.8rem;background:none;border:1px solid var(--rule);
+    color:var(--text-soft);padding:.32rem .6rem;cursor:pointer}
+  .toggle:hover{border-color:var(--text-soft);color:var(--ink)}
+
+  .layout{display:flex;gap:3.4rem;padding:2.4rem 0 5rem}
+  .rail{flex:0 0 11rem;display:none}
+  @media (min-width:940px){.rail{display:block}}
+  .rail-inner{position:sticky;top:1.8rem;font-family:var(--mono);font-size:.84rem}
+  .rail ol{list-style:none;margin:0;padding:0;counter-reset:p}
+  .rail li{counter-increment:p}
+  .rail a{display:flex;gap:.55rem;padding:.28rem 0;color:var(--text-soft);text-decoration:none;align-items:baseline}
+  .rail a:hover{color:var(--ink)}
+  .rail a .n::before{content:counter(p,decimal-leading-zero)}
+  .rail a .n{color:var(--rule)}
+  .rail a[aria-current="page"]{color:var(--ink)}
+  .rail a[aria-current="page"] .n{color:var(--amber)}
+  .rail a.done .n{color:var(--teal)}
+  .rail .home{display:block;margin-bottom:1rem;color:var(--text-soft);text-decoration:none}
+  .rail .home:hover{color:var(--amber)}
+  .rail .prog{margin-top:1.3rem;color:var(--text-soft);font-size:.78rem}
+  .rail .bar{height:3px;background:var(--rule-soft);margin-top:.4rem}
+  .rail .bar > i{display:block;height:100%;background:var(--amber);width:0;transition:width .45s ease}
+
+  .main{flex:1 1 auto;min-width:0;max-width:68ch}
+  .plate-no{font-family:var(--mono);font-weight:500;letter-spacing:-.02em;
+    font-size:clamp(2.4rem,7vw,3.6rem);line-height:1;color:var(--rule)}
+  .plate-title{font-family:var(--mono);font-weight:600;letter-spacing:-.015em;
+    font-size:clamp(1.7rem,4.4vw,2.5rem);line-height:1.12;margin:.35rem 0 0;color:var(--ink)}
+  .standfirst{font-size:1.2rem;color:var(--text-soft);margin:1rem 0 0;max-width:60ch}
+
+  .main h2{font-family:var(--mono);font-weight:600;font-size:1.24rem;letter-spacing:-.01em;
+    margin:3rem 0 .2rem;color:var(--ink)}
+  .main h2::before{content:"";display:block;width:2.2rem;border-top:2px solid var(--amber);margin-bottom:.9rem}
+  .main h3{font-family:var(--mono);font-weight:600;font-size:1rem;margin:1.8rem 0 .3rem;color:var(--ink)}
+  .main p{margin:1.1rem 0}
+  .main ul{margin:1.1rem 0;padding-left:1.2rem}
+  .main li{margin:.4rem 0}
+  .main strong{color:var(--ink)}
+  :not(pre) > code{font-family:var(--mono);font-size:.9em;background:var(--rule-soft);padding:.06em .35em;border-radius:2px}
+
+  .aside{border-left:3px solid var(--rule);padding:.3rem 0 .3rem 1rem;margin:1.6rem 0;color:var(--text-soft);font-size:1rem}
+  .aside b{font-family:var(--mono);font-weight:600;font-size:.82rem;color:var(--text-soft);display:block;margin-bottom:.25rem}
+
+  pre.term{background:#0E1216;color:#CBCBC2;border:1px solid var(--rule);margin:1.4rem 0;
+    padding:1rem 1.05rem;overflow-x:auto;font-family:var(--mono);font-size:.86rem;line-height:1.55}
+  .term .c{color:#5FD3CC}.term .a{color:#E7A93B}.term .g{color:#9BD17F}.term .d{color:#7E8792}
+
+  /* UI mock */
+  .mock{border:1px solid var(--rule);background:var(--paper-2);margin:2rem 0}
+  .mock-tab{font-family:var(--mono);font-size:.8rem;color:var(--text-soft);
+    padding:.55rem .9rem;border-bottom:1px solid var(--rule);border-left:3px solid var(--amber)}
+  .mock-body{padding:1.1rem .95rem 1.3rem}
+  .screen{border:1px solid var(--rule);background:var(--paper);display:grid;grid-template-columns:7rem 1fr;
+    font-size:.82rem;font-family:var(--mono)}
+  .screen .side{border-right:1px solid var(--rule);padding:.6rem .5rem;color:var(--text-soft)}
+  .screen .side .row{padding:.3rem .2rem}
+  .screen .chat{display:flex;flex-direction:column;min-height:12rem}
+  .screen .topbar{display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--rule);padding:.5rem .6rem}
+  .screen .body{flex:1 1 auto;padding:.7rem .6rem;color:var(--text-soft);line-height:1.5}
+  .screen .composer{border-top:1px solid var(--rule);padding:.5rem .6rem;display:flex;gap:.5rem;align-items:center}
+  .hot{background:var(--paper-2);border:1px solid var(--rule);color:var(--text);padding:.22rem .5rem;
+    cursor:pointer;font:inherit;font-size:.8rem}
+  .hot:hover{border-color:var(--text-soft)}
+  .hot[aria-pressed="true"]{border-color:var(--amber);color:var(--ink);box-shadow:inset 0 -2px 0 var(--amber)}
+  .hot-note{margin:.9rem 0 0;font-size:.98rem;color:var(--text-soft);min-height:2.6em}
+  .hot-note b{font-family:var(--mono);font-size:.82rem;color:var(--ink);display:block;margin-bottom:.2rem}
+
+  .check{border-top:1px solid var(--rule);margin-top:3.6rem;padding-top:1.6rem}
+  .check h2{margin-top:0}
+  .q{margin:1.6rem 0}
+  .q > p{font-weight:600;color:var(--ink);margin:0 0 .5rem}
+  .opt{display:block;width:100%;text-align:left;font:inherit;font-size:1rem;background:var(--paper-2);
+    border:1px solid var(--rule);padding:.6rem .8rem;margin:.4rem 0;cursor:pointer;color:var(--text)}
+  .opt:hover{border-color:var(--text-soft)}
+  .q.answered .opt{cursor:default}
+  .opt.right{border-color:var(--teal);box-shadow:inset 3px 0 0 var(--teal)}
+  .opt.wrong{border-color:var(--wrong);box-shadow:inset 3px 0 0 var(--wrong);opacity:.75}
+  .why{font-size:.96rem;color:var(--text-soft);margin:.55rem 0 0;display:none}
+  .q.answered .why{display:block}
+
+  .done-row{margin:2.6rem 0 0}
+  .mark-btn{font-family:var(--mono);font-size:.86rem;background:var(--paper-2);border:1px solid var(--rule);
+    color:var(--ink);padding:.55rem .9rem;cursor:pointer}
+  .mark-btn:hover{border-color:var(--amber)}
+  .mark-btn[disabled]{color:var(--teal);border-color:var(--teal);cursor:default}
+
+  .pager{display:flex;justify-content:space-between;gap:1rem;margin-top:3rem;
+    border-top:1px solid var(--rule);padding-top:1.2rem;font-family:var(--mono);font-size:.9rem}
+  .pager a{display:flex;flex-direction:column;gap:.15rem;text-decoration:none;color:var(--ink);max-width:46%}
+  .pager a:hover{color:var(--amber)}
+  .pager .dir{font-size:.72rem;color:var(--text-soft)}
+  .pager .n{text-align:right}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <span class="mark"><a href="index.html">Local AI Workstation</a> &nbsp;/ &nbsp;plate 03</span>
+    <button class="toggle" type="button" onclick="__toggleTheme()">light / dark</button>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" aria-label="Plates">
+      <div class="rail-inner">
+        <a class="home" href="index.html">&larr; contents</a>
+        <ol>
+          <li><a href="01-models-and-tokens.html" data-plate="01"><span class="n"></span> models &amp; tokens</a></li>
+          <li><a href="02-ollama.html" data-plate="02"><span class="n"></span> ollama</a></li>
+          <li><a href="03-open-webui.html" data-plate="03" aria-current="page"><span class="n"></span> open webui</a></li>
+          <li><a href="04-hardware.html" data-plate="04"><span class="n"></span> hardware</a></li>
+          <li><a href="05-the-setup-script.html" data-plate="05"><span class="n"></span> setup.sh</a></li>
+        </ol>
+        <div class="prog"><span data-progress-count>0 of 5</span> read
+          <span class="bar"><i data-progress-bar></i></span>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <p class="plate-no">03</p>
+      <h1 class="plate-title">The console &mdash; Open WebUI</h1>
+      <p class="standfirst">Open WebUI is the chat website you open in a browser. It holds your conversations,
+      settings, and account &mdash; but it never runs a model itself. Every message is handed to Ollama and the
+      reply is streamed back.</p>
+
+      <h2>Front end, not brain</h2>
+      <p>Keep the split from Plate&nbsp;02 in mind:</p>
+      <ul>
+        <li><strong>Open WebUI</strong> &mdash; the browser app at <code>http://localhost:8080</code>. Chat
+        history, the model picker, system prompts, user accounts, settings.</li>
+        <li><strong>Ollama</strong> &mdash; the server at <code>http://localhost:11434</code> that actually
+        loads and runs the model.</li>
+      </ul>
+      <p>When you press enter, Open WebUI packages the conversation and sends it to Ollama, then displays the
+      tokens as they come back. If Ollama is down or has no models, Open WebUI has nothing to show &mdash;
+      which is why Plate&nbsp;02's health check is the first thing to try when chat stops working.</p>
+
+      <div class="aside">
+        <b>The local account</b>
+        On first launch Open WebUI asks you to create an account with an email and password. That account lives
+        in a database file on your workstation. It is not a login to any service, nothing is sent anywhere, and
+        the "email" can be anything &mdash; it's just the username.
+      </div>
+
+      <h2>Anatomy of the chat screen</h2>
+      <p>Click a control to see what it's for.</p>
+
+      <div class="mock">
+        <div class="mock-tab">open webui — chat screen</div>
+        <div class="mock-body">
+          <div class="screen">
+            <div class="side">
+              <button class="hot" data-hot="new" style="width:100%;margin-bottom:.4rem">+ new chat</button>
+              <div class="row">history…</div>
+              <div class="row">history…</div>
+            </div>
+            <div class="chat">
+              <div class="topbar">
+                <button class="hot" data-hot="model">qwen3:8b ▾</button>
+                <button class="hot" data-hot="params">controls</button>
+              </div>
+              <div class="body">
+                you: explain a context window<br>
+                assistant: it's how many tokens…
+                <div style="margin-top:.4rem">
+                  <button class="hot" data-hot="regen">↻ regenerate</button>
+                </div>
+              </div>
+              <div class="composer">
+                <button class="hot" data-hot="system">system</button>
+                <span style="flex:1 1 auto;border:1px solid var(--rule);padding:.25rem .4rem;color:var(--text-soft)">message…</span>
+                <button class="hot" data-hot="send">send</button>
+              </div>
+            </div>
+          </div>
+          <p class="hot-note" id="hotNote" aria-live="polite"><b>Pick a control</b>Each one maps to something
+          from the earlier plates.</p>
+        </div>
+      </div>
+
+      <h2>Starting and stopping it</h2>
+      <p><code>setup.sh</code> installs Open WebUI into a Python virtual environment at
+      <code>~/openwebui-env</code>. It does not leave it running. To start it &mdash; now, or any time after a
+      reboot:</p>
+      <pre class="term"><span class="d">$</span> source ~/openwebui-env/bin/activate
+<span class="d">(openwebui-env) $</span> open-webui serve</pre>
+      <p>Then open <code>http://localhost:8080</code>. Leave that terminal open while you use it; press
+      <code>Ctrl-C</code> in it to stop the server. The <code>(openwebui-env)</code> prefix tells you the
+      virtual environment is active &mdash; Plate&nbsp;05 explains what that environment is and why it's there.</p>
+
+      <div class="aside">
+        <b>The one-line version</b>
+        Open WebUI is the browser app on port 8080. It stores your chats and settings and forwards every
+        message to Ollama on port 11434. Start it with <code>activate</code> then <code>open-webui serve</code>;
+        stop it with <code>Ctrl-C</code>.
+      </div>
+
+      <section class="check">
+        <h2>Self-check</h2>
+
+        <div class="q">
+          <p>1. Which task does Open WebUI do itself, without Ollama?</p>
+          <button class="opt" data-correct="1">Store your chat history and settings</button>
+          <button class="opt">Generate the model's replies</button>
+          <button class="opt">Load the model onto the GPU</button>
+          <button class="opt">Decide how many tokens the model predicts</button>
+          <p class="why">Open WebUI owns the accounts, history, and UI. Everything to do with running the model
+          is Ollama's job.</p>
+        </div>
+
+        <div class="q">
+          <p>2. You reboot the workstation and <code>http://localhost:8080</code> won't load. Most likely cause?</p>
+          <button class="opt">The model was deleted</button>
+          <button class="opt" data-correct="1">Open WebUI isn't running &mdash; you need to activate the env and run <code>open-webui serve</code> again</button>
+          <button class="opt">Your account expired</button>
+          <button class="opt">The browser needs reinstalling</button>
+          <p class="why">Unlike the Ollama service, Open WebUI isn't started automatically. After a reboot you
+          start it by hand.</p>
+        </div>
+
+        <div class="q">
+          <p>3. Where does the account you create on first launch actually live?</p>
+          <button class="opt">On Open WebUI's servers</button>
+          <button class="opt">In your Google account</button>
+          <button class="opt" data-correct="1">In a database file on your own workstation</button>
+          <button class="opt">Nowhere &mdash; it's not saved</button>
+          <p class="why">It's a local account in a local database. The email field is just a username; nothing
+          leaves the machine.</p>
+        </div>
+      </section>
+
+      <div class="done-row">
+        <button class="mark-btn" id="markBtn" type="button" data-plate="03">Mark plate 03 as read</button>
+      </div>
+
+      <nav class="pager">
+        <a href="02-ollama.html"><span class="dir">back</span><span>02 · The engine room</span></a>
+        <a href="04-hardware.html"><span class="dir n">next</span><span class="n">04 · Fuel &amp; workspace</span></a>
+      </nav>
+    </main>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, KEY='law-theme', saved=null;
+    try{saved=localStorage.getItem(KEY);}catch(e){}
+    if(saved){root.setAttribute('data-theme',saved);}
+    function current(){return root.getAttribute('data-theme')||
+      (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+    window.__toggleTheme=function(){
+      var next=current()==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem(KEY,next);}catch(e){}
+    };
+  })();
+
+  (function(){
+    var KEY='law-progress', TOTAL=5;
+    function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+    function write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+    function paint(){
+      var o=read(), n=Object.keys(o).filter(function(k){return o[k];}).length;
+      document.querySelectorAll('[data-progress-count]').forEach(function(el){el.textContent=n+' of '+TOTAL;});
+      document.querySelectorAll('[data-progress-bar]').forEach(function(el){el.style.width=(n/TOTAL*100)+'%';});
+      document.querySelectorAll('.rail a[data-plate]').forEach(function(a){
+        a.classList.toggle('done',!!o[a.getAttribute('data-plate')]);
+      });
+      var b=document.getElementById('markBtn');
+      if(b && o[b.getAttribute('data-plate')]){b.disabled=true;b.textContent='Plate 03 marked as read';}
+    }
+    var mb=document.getElementById('markBtn');
+    if(mb) mb.addEventListener('click',function(){
+      var o=read(); o[mb.getAttribute('data-plate')]=true; write(o); paint();
+    });
+    paint();
+  })();
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.opt'); if(!b) return;
+    var q=b.closest('.q'); if(!q || q.classList.contains('answered')) return;
+    q.classList.add('answered');
+    q.querySelectorAll('.opt').forEach(function(o){
+      if(o.getAttribute('data-correct')==='1') o.classList.add('right');
+      else if(o===b) o.classList.add('wrong');
+    });
+  });
+
+  /* UI mock hotspots */
+  (function(){
+    var NOTE={
+      "new":["New chat","Starts a fresh conversation with an empty context window. The model keeps nothing from the previous chat — a clean desk, in Plate 01's terms."],
+      model:["Model picker","Chooses which pulled model handles this chat. The list is whatever Ollama reports from <code>ollama list</code>. Switching models mid-chat is allowed."],
+      params:["Controls","Per-chat settings — the big one is <b>temperature</b>: low (0–0.3) for factual, repeatable answers; higher (0.7–1) for looser, more varied ones. Also context length and seed."],
+      regen:["Regenerate","Re-runs the last turn. With temperature above 0 you get a different wording each time, since the model samples its next token rather than always taking the top pick."],
+      system:["System prompt","Standing instructions sent ahead of every message in this chat — role, tone, format. It counts against the context window like any other tokens."],
+      send:["Send","Packages the system prompt, the history, and your new message, posts it to Ollama on port 11434, and streams the reply back token by token."]
+    };
+    var note=document.getElementById('hotNote');
+    document.querySelectorAll('.mock .hot').forEach(function(b){
+      b.addEventListener('click',function(){
+        document.querySelectorAll('.mock .hot').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+        var d=NOTE[b.getAttribute('data-hot')];
+        note.innerHTML='<b>'+d[0]+'</b>'+d[1];
+      });
+    });
+  })();
+</script>
+</body>
+</html>

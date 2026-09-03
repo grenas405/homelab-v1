@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local AI Workstation — Field Handbook</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --ink:#12161C; --paper:#E7E6DD; --paper-2:#EFEEE6;
+    --rule:#B9B8AD; --rule-soft:#CFCEC4;
+    --amber:#C0821A; --teal:#1C6A66;
+    --text:#20242B; --text-soft:#565A5F;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23;
+      --rule:#333A44; --rule-soft:#242A32;
+      --amber:#E7A93B; --teal:#54CFC8;
+      --text:#D5D3C9; --text-soft:#969A98;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#E9E7DE; --paper:#12161C; --paper-2:#171C23;
+    --rule:#333A44; --rule-soft:#242A32;
+    --amber:#E7A93B; --teal:#54CFC8;
+    --text:#D5D3C9; --text-soft:#969A98;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);font-size:1.15rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+  img{max-width:100%}
+  a{color:var(--teal);text-underline-offset:2px;text-decoration-thickness:1px}
+  a:hover{color:var(--amber)}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  .shell{max-width:76rem;margin:0 auto;padding:0 1.5rem}
+  .masthead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+    border-bottom:1px solid var(--rule);padding:1.1rem 0 .9rem;font-family:var(--mono)}
+  .masthead .mark{font-size:.82rem;letter-spacing:.02em;color:var(--text-soft)}
+  .masthead .mark b{color:var(--ink);font-weight:600}
+  .toggle{font-family:var(--mono);font-size:.8rem;background:none;border:1px solid var(--rule);
+    color:var(--text-soft);padding:.32rem .6rem;cursor:pointer}
+  .toggle:hover{border-color:var(--text-soft);color:var(--ink)}
+
+  .hero{padding:3.2rem 0 1rem;max-width:60ch}
+  .kicker{font-family:var(--mono);font-size:.8rem;color:var(--text-soft);margin:0 0 1.4rem}
+  h1{font-family:var(--mono);font-weight:600;letter-spacing:-.02em;
+    font-size:clamp(2rem,5.4vw,3.1rem);line-height:1.08;margin:0;color:var(--ink)}
+  .hero p{margin:1.2rem 0 0;max-width:64ch}
+
+  .diagram{margin:2.6rem 0 1rem;color:var(--ink)}
+  .diagram svg{width:100%;height:auto;display:block}
+  .diagram text{font-family:var(--mono);fill:currentColor}
+  .diagram .unit{fill:var(--paper-2);stroke:currentColor;stroke-width:1.4}
+  .diagram .flow{stroke:var(--amber);stroke-width:1.6;fill:none}
+  .diagram .back{stroke:var(--text-soft);stroke-width:1.2;fill:none;stroke-dasharray:3 4}
+  .diagram .port{fill:var(--text-soft);font-size:12px}
+  .diagram .lbl{fill:var(--ink);font-size:15px;font-weight:600}
+  .diagram .sub{fill:var(--text-soft);font-size:11.5px}
+  .diagram .frame{stroke:var(--rule);stroke-width:1;fill:none}
+  .diagram .frame-lbl{fill:var(--text-soft);font-size:11px}
+
+  h2{font-family:var(--mono);font-weight:600;font-size:1.25rem;letter-spacing:-.01em;
+    margin:3.4rem 0 .2rem;color:var(--ink)}
+  h2::before{content:"";display:block;width:2.2rem;border-top:2px solid var(--amber);margin-bottom:.9rem}
+
+  .contents{list-style:none;margin:1.4rem 0 0;padding:0;counter-reset:plate}
+  .contents li{border-top:1px solid var(--rule);padding:1.15rem 0}
+  .contents li:last-child{border-bottom:1px solid var(--rule)}
+  .contents a{display:grid;grid-template-columns:3.2rem 1fr auto;gap:1rem;align-items:baseline;
+    text-decoration:none;color:var(--text)}
+  .contents a:hover .c-title{color:var(--amber)}
+  .c-no{font-family:var(--mono);font-size:1.5rem;color:var(--rule);counter-increment:plate}
+  .c-no::before{content:counter(plate,decimal-leading-zero)}
+  a:hover .c-no,.contents a:focus-visible .c-no{color:var(--text-soft)}
+  .c-title{display:block;font-family:var(--mono);font-weight:600;font-size:1.05rem;color:var(--ink)}
+  .c-desc{display:block;margin:.3rem 0 0;font-size:.98rem;color:var(--text-soft);max-width:52ch}
+  .c-meta{font-family:var(--mono);font-size:.78rem;color:var(--text-soft);white-space:nowrap}
+  .c-done{color:var(--teal)}
+
+  .status{display:flex;align-items:center;gap:1rem;margin:2.4rem 0 0;font-family:var(--mono);font-size:.85rem;color:var(--text-soft)}
+  .bar{flex:1 1 auto;height:3px;background:var(--rule-soft);max-width:14rem}
+  .bar > i{display:block;height:100%;background:var(--amber);width:0;transition:width .45s ease}
+  .reset{font-family:var(--mono);font-size:.76rem;background:none;border:0;color:var(--text-soft);
+    text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0}
+  .reset:hover{color:var(--amber)}
+
+  footer{border-top:1px solid var(--rule);margin:4rem 0 0;padding:1.6rem 0 3rem;
+    font-size:.92rem;color:var(--text-soft);max-width:60ch}
+  footer code{font-family:var(--mono);font-size:.86em;background:var(--rule-soft);padding:.06em .35em}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <span class="mark"><b>Local AI Workstation</b> &nbsp;field handbook</span>
+    <button class="toggle" type="button" onclick="__toggleTheme()">light / dark</button>
+  </header>
+
+  <section class="hero">
+    <p class="kicker">For Eric Harvey · read offline · no internet needed</p>
+    <h1>The machine you just built</h1>
+    <p>You cloned a repo and ran <code style="font-family:var(--mono);font-size:.9em">setup.sh</code>. It put four
+    things on your workstation that together let you chat with a language model that runs entirely on your own
+    hardware. This handbook walks through each part: what it is, why it's there, and how to drive it.</p>
+    <p>Nothing here talks to the internet. Every page is one file. Read them in order or jump around.</p>
+  </section>
+
+  <div class="diagram">
+    <svg viewBox="0 0 720 244" role="img" aria-labelledby="dTitle dDesc">
+      <title id="dTitle">Signal path of the local AI stack</title>
+      <desc id="dDesc">Your browser sends messages to Open WebUI on port 8080. Open WebUI forwards them to
+        Ollama on port 11434. Ollama runs the qwen3:8b model on the GPU or CPU and streams the reply back along
+        the same path. All four parts live on your workstation.</desc>
+
+      <!-- units -->
+      <g>
+        <rect class="unit" x="8"   y="52" width="150" height="66"></rect>
+        <rect class="unit" x="196" y="52" width="150" height="66"></rect>
+        <rect class="unit" x="384" y="52" width="150" height="66"></rect>
+        <rect class="unit" x="562" y="52" width="150" height="66"></rect>
+
+        <text class="lbl" x="24"  y="82">Browser</text>
+        <text class="sub" x="24"  y="102">you type here</text>
+        <text class="lbl" x="212" y="82">Open WebUI</text>
+        <text class="sub" x="212" y="102">the chat screen</text>
+        <text class="lbl" x="400" y="82">Ollama</text>
+        <text class="sub" x="400" y="102">the model server</text>
+        <text class="lbl" x="578" y="82">qwen3:8b</text>
+        <text class="sub" x="578" y="102">on GPU or CPU</text>
+      </g>
+
+      <!-- forward flow -->
+      <g>
+        <path class="flow" d="M158 78 L196 78"></path>
+        <path class="flow" d="M346 78 L384 78"></path>
+        <path class="flow" d="M534 78 L562 78"></path>
+        <path class="flow" d="M170 78 l-7 -4 M170 78 l-7 4" transform="translate(19,0)"></path>
+        <path class="flow" d="M358 78 l-7 -4 M358 78 l-7 4" transform="translate(19,0)"></path>
+        <path class="flow" d="M546 78 l-7 -4 M546 78 l-7 4" transform="translate(19,0)"></path>
+        <text class="port" x="160" y="42">:8080</text>
+        <text class="port" x="349" y="42">:11434</text>
+        <text class="port" x="540" y="42">local call</text>
+      </g>
+
+      <!-- reply flow -->
+      <g>
+        <path class="back" d="M562 96 L534 96 M384 96 L346 96 M196 96 L158 96"></path>
+        <text class="port" x="300" y="140">reply streams back the same way</text>
+      </g>
+
+      <!-- workstation frame -->
+      <g>
+        <path class="frame" d="M8 176 L8 186 L712 186 L712 176"></path>
+        <text class="frame-lbl" x="360" y="208" text-anchor="middle">your workstation. nothing crosses this line.</text>
+      </g>
+    </svg>
+  </div>
+
+  <h2>The plates</h2>
+  <ol class="contents" id="contents">
+    <li><a href="01-models-and-tokens.html" data-plate="01">
+      <span class="c-no"></span>
+      <span><span class="c-title">What the machine thinks in</span>
+        <span class="c-desc">Models, parameters, tokens, context windows, and what "quantized" means for size and speed.</span></span>
+      <span class="c-meta"><span class="c-tick"></span>~8 min</span>
+    </a></li>
+    <li><a href="02-ollama.html" data-plate="02">
+      <span class="c-no"></span>
+      <span><span class="c-title">The engine room — Ollama</span>
+        <span class="c-desc">The local model server, the API on port 11434, and the handful of commands you'll actually use.</span></span>
+      <span class="c-meta"><span class="c-tick"></span>~9 min</span>
+    </a></li>
+    <li><a href="03-open-webui.html" data-plate="03">
+      <span class="c-no"></span>
+      <span><span class="c-title">The console — Open WebUI</span>
+        <span class="c-desc">The browser front end, how it connects to Ollama, and how to start and stop it.</span></span>
+      <span class="c-meta"><span class="c-tick"></span>~7 min</span>
+    </a></li>
+    <li><a href="04-hardware.html" data-plate="04">
+      <span class="c-no"></span>
+      <span><span class="c-title">Fuel and workspace</span>
+        <span class="c-desc">VRAM versus system RAM, GPU offload, and a calculator for whether a model will fit.</span></span>
+      <span class="c-meta"><span class="c-tick"></span>~9 min</span>
+    </a></li>
+    <li><a href="05-the-setup-script.html" data-plate="05">
+      <span class="c-no"></span>
+      <span><span class="c-title">Reading the setup script</span>
+        <span class="c-desc">A guided tour of <code style="font-family:var(--mono);font-size:.85em">setup.sh</code>: the safety prompt, the five steps, the dry run, and the bash behind them.</span></span>
+      <span class="c-meta"><span class="c-tick"></span>~10 min</span>
+    </a></li>
+  </ol>
+
+  <div class="status">
+    <span data-progress-count>0 of 5</span> plates read
+    <span class="bar"><i data-progress-bar></i></span>
+    <button class="reset" type="button" id="resetBtn">clear progress</button>
+  </div>
+
+  <footer>
+    <p>Your place is remembered in this browser only — it never leaves the machine, and clearing your browser
+    data resets it. To read these on another machine, clone the repo there and open
+    <code>learn/index.html</code>.</p>
+  </footer>
+
+</div>
+
+<script>
+  /* theme */
+  (function(){
+    var root=document.documentElement, KEY='law-theme', saved=null;
+    try{saved=localStorage.getItem(KEY);}catch(e){}
+    if(saved){root.setAttribute('data-theme',saved);}
+    function current(){
+      return root.getAttribute('data-theme') ||
+        (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    window.__toggleTheme=function(){
+      var next=current()==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem(KEY,next);}catch(e){}
+    };
+  })();
+
+  /* progress */
+  (function(){
+    var KEY='law-progress', TOTAL=5;
+    function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+    function count(){var o=read();return Object.keys(o).filter(function(k){return o[k];}).length;}
+    function paint(){
+      var n=count(), o=read();
+      document.querySelectorAll('[data-progress-count]').forEach(function(el){el.textContent=n+' of '+TOTAL;});
+      document.querySelectorAll('[data-progress-bar]').forEach(function(el){el.style.width=(n/TOTAL*100)+'%';});
+      document.querySelectorAll('.contents a[data-plate]').forEach(function(a){
+        var done=!!o[a.getAttribute('data-plate')];
+        a.querySelector('.c-no').classList.toggle('c-done',done);
+        var tick=a.querySelector('.c-tick');
+        if(tick) tick.textContent=done?'read · ':'';
+      });
+    }
+    var btn=document.getElementById('resetBtn');
+    if(btn) btn.addEventListener('click',function(){
+      try{localStorage.removeItem(KEY);}catch(e){}
+      paint();
+    });
+    paint();
+  })();
+</script>
+</body>
+</html>
